@@ -1,0 +1,4 @@
+name = jack
+name = jack
+my_age = 50
+
