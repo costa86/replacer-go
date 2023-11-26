@@ -1,4 +1,4 @@
-name = jack
-name = jack
+name = {{name}}
 my_age = 50
+name = {{name}}
 

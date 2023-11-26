@@ -3,65 +3,32 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 )
 
-func main() {
-	if len(os.Args) < 3 {
-		fmt.Println("Usage: go run main.go <jsonFilePath> <fileToModify>")
+func handleFailure(e error) {
+	if e != nil {
+		log.Fatal(e)
 		os.Exit(1)
 	}
-
-	// Read JSON file
-	jsonFilePath := os.Args[1]
-	jsonData, err := readJSONFile(jsonFilePath)
-	if err != nil {
-		fmt.Println("Error reading JSON file:", err)
-		os.Exit(1)
-	}
-
-	// Read the content of the file
-	filePath := os.Args[2]
-	fileContent, err := readFile(filePath)
-	if err != nil {
-		fmt.Println("Error reading the file:", err)
-		os.Exit(1)
-	}
-
-	// Replace placeholders in the file with JSON values
-	modifiedContent := replacePlaceholders(fileContent, jsonData)
-
-	// Write the modified content back to the file
-	err = writeFile(filePath, modifiedContent)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		os.Exit(1)
-	}
-
-	fmt.Println("Replacement complete.")
 }
 
 func readJSONFile(filePath string) (map[string]interface{}, error) {
 	file, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
+	handleFailure(err)
 
 	var jsonData map[string]interface{}
 	err = json.Unmarshal(file, &jsonData)
-	if err != nil {
-		return nil, err
-	}
+	handleFailure(err)
 
 	return jsonData, nil
 }
 
 func readFile(filePath string) (string, error) {
 	file, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", err
-	}
+	handleFailure(err)
 
 	return string(file), nil
 }
@@ -70,19 +37,43 @@ func replacePlaceholders(content string, jsonData map[string]interface{}) string
 	re := regexp.MustCompile(`{{(.*?)}}`)
 
 	return re.ReplaceAllStringFunc(content, func(match string) string {
-		// Extract the key from the placeholder
 		key := re.FindStringSubmatch(match)[1]
 
-		// Look up the key in the JSON data
 		if value, ok := jsonData[key]; ok {
 			return fmt.Sprint(value)
 		}
 
-		// If the key is not found, return the original placeholder
 		return match
 	})
 }
 
 func writeFile(filePath, content string) error {
 	return os.WriteFile(filePath, []byte(content), 0644)
+}
+
+const version = "1.0.0"
+
+func main() {
+
+	if len(os.Args) != 3 {
+		fmt.Printf("Replacer\nReplaces entries in a file based on a placeholder\nPlaceholder: {{}}\nUsage: ./replacer <json_dict_file> <file_to_modify>\nDeveloped by PCA team\nVersion: %s\n", version)
+		os.Exit(1)
+	}
+
+	jsonFilePath := os.Args[1]
+	jsonData, err := readJSONFile(jsonFilePath)
+
+	handleFailure(err)
+
+	filePath := os.Args[2]
+	fileContent, err := readFile(filePath)
+
+	handleFailure(err)
+
+	modifiedContent := replacePlaceholders(fileContent, jsonData)
+
+	err = writeFile(filePath, modifiedContent)
+	handleFailure(err)
+
+	fmt.Println("Replacement complete.")
 }
